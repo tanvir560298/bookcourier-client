@@ -16,17 +16,19 @@ const DashboardLayout = () => {
 
   const linkClass = ({ isActive }) =>
     isActive
-      ? "btn bg-amber-600 text-white border-none justify-start"
-      : "btn btn-ghost justify-start";
+      ? "btn btn-sm lg:btn-md bg-amber-600 text-white border-none justify-start whitespace-nowrap"
+      : "btn btn-sm lg:btn-md btn-ghost justify-start whitespace-nowrap";
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-12">
-      <aside className="lg:col-span-3 bg-base-200 p-6">
-        <h2 className="text-3xl font-extrabold mb-2">Dashboard</h2>
+    <div className="min-h-screen lg:grid lg:grid-cols-12">
+      <aside className="lg:col-span-3 bg-base-200 p-4 lg:p-6 lg:min-h-screen">
+        <h2 className="text-2xl lg:text-3xl font-extrabold mb-2">
+          Dashboard
+        </h2>
 
-        <p className="badge badge-warning mb-8 capitalize">{role}</p>
+        <p className="badge badge-warning mb-4 lg:mb-8 capitalize">{role}</p>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-2">
           <NavLink to="/dashboard" end className={linkClass}>
             Overview
           </NavLink>
@@ -35,7 +37,6 @@ const DashboardLayout = () => {
             Profile
           </NavLink>
 
-          {/* User Links */}
           <NavLink to="/dashboard/my-orders" className={linkClass}>
             My Orders
           </NavLink>
@@ -44,7 +45,6 @@ const DashboardLayout = () => {
             Invoices
           </NavLink>
 
-          {/* Librarian + Admin Links */}
           {(role === "librarian" || role === "admin") && (
             <>
               <NavLink to="/dashboard/add-book" className={linkClass}>
@@ -61,7 +61,6 @@ const DashboardLayout = () => {
             </>
           )}
 
-          {/* Admin Only Links */}
           {role === "admin" && (
             <>
               <NavLink to="/dashboard/all-users" className={linkClass}>
@@ -74,13 +73,16 @@ const DashboardLayout = () => {
             </>
           )}
 
-          <NavLink to="/" className="btn btn-outline justify-start mt-8">
+          <NavLink
+            to="/"
+            className="btn btn-sm lg:btn-md btn-outline justify-start lg:mt-8 whitespace-nowrap"
+          >
             Back To Home
           </NavLink>
         </div>
       </aside>
 
-      <main className="lg:col-span-9 p-6">
+      <main className="lg:col-span-9 p-4 lg:p-6 overflow-x-hidden">
         <Outlet />
       </main>
     </div>

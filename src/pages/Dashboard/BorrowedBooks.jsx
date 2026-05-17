@@ -4,16 +4,21 @@ import toast from "react-hot-toast";
 
 const BorrowedBooks = () => {
   const { user } = useAuth();
-
   const [orders, setOrders] = useState([]);
 
   const loadOrders = () => {
     if (!user?.email) return;
 
-    fetch(`${import.meta.env.VITE_API_URL}/orders?email=${user.email}`)
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch(() => toast.error("Failed to load orders"));
+    user.getIdToken().then((token) => {
+      fetch(`${import.meta.env.VITE_API_URL}/orders?email=${user.email}`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => setOrders(data))
+        .catch(() => toast.error("Failed to load orders"));
+    });
   };
 
   useEffect(() => {

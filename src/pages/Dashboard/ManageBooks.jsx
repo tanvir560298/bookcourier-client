@@ -52,8 +52,8 @@ const ManageBooks = () => {
     <div>
       <h2 className="text-4xl font-extrabold mb-8">Manage Books</h2>
 
-      <div className="overflow-x-auto">
-        <table className="table bg-base-200 rounded-2xl">
+      <div className="w-full overflow-x-auto">
+  <table className="table table-xs md:table-md bg-base-200 rounded-2xl min-w-[700px]">
           <thead>
             <tr>
               <th>#</th>

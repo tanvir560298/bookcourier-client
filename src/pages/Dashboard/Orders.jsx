@@ -1,18 +1,30 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import useAuth from "../../hooks/useAuth";
 
 const Orders = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
 
   const loadOrders = () => {
-    fetch(`${import.meta.env.VITE_API_URL}/orders`)
-      .then((res) => res.json())
-      .then((data) => setOrders(data));
+    if (!user) return;
+
+    user.getIdToken().then((token) => {
+      fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => setOrders(Array.isArray(data) ? data : []))
+        .catch(() => toast.error("Failed to load orders"));
+    });
   };
 
-  useEffect(() => {
+
+ useEffect(() => {
     loadOrders();
-  }, []);
+  }, [user]);
 
   const handleStatusChange = (id, status) => {
     fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, {

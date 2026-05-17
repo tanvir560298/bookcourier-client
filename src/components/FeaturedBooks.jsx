@@ -5,7 +5,7 @@ const FeaturedBooks = () => {
   const [books, setBooks] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5001/latest-books")
+    fetch(`${import.meta.env.VITE_API_URL}/latest-books`)
       .then((res) => res.json())
       .then((data) => setBooks(data));
   }, []);

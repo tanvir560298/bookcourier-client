@@ -5,9 +5,14 @@ import toast from "react-hot-toast";
 const BorrowedBooks = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const loadOrders = () => {
     if (!user?.email) return;
+
+    setLoading(true);
+    setError("");
 
     user.getIdToken().then((token) => {
       fetch(`${import.meta.env.VITE_API_URL}/orders?email=${user.email}`, {
@@ -15,9 +20,22 @@ const BorrowedBooks = () => {
           authorization: `Bearer ${token}`,
         },
       })
-        .then((res) => res.json())
-        .then((data) => setOrders(data))
-        .catch(() => toast.error("Failed to load orders"));
+        .then(async (res) => {
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.message || "Failed to load orders");
+          }
+
+          return data;
+        })
+        .then((data) => setOrders(Array.isArray(data) ? data : []))
+        .catch((err) => {
+          setOrders([]);
+          setError(err.message || "Failed to load orders");
+          toast.error(err.message || "Failed to load orders");
+        })
+        .finally(() => setLoading(false));
     });
   };
 
@@ -62,6 +80,33 @@ const BorrowedBooks = () => {
         }
       });
   };
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-4xl font-extrabold mb-8">My Orders</h2>
+        <div className="space-y-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="skeleton h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="max-w-md text-center">
+          <h2 className="text-4xl font-extrabold mb-4">Orders Unavailable</h2>
+          <p className="text-gray-500">{error}</p>
+          <button onClick={loadOrders} className="btn mt-6 bg-amber-600 text-white">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (orders.length === 0) {
     return (

@@ -1,108 +1,348 @@
-import { Link } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import {
+  FiArrowRight,
+  FiBookOpen,
+  FiCalendar,
+  FiMapPin,
+  FiRefreshCw,
+  FiSearch,
+  FiSliders,
+  FiStar,
+} from "react-icons/fi";
+
+const fallbackCategories = [
+  "Programming",
+  "Self Development",
+  "Business",
+  "Science",
+  "History",
+  "Productivity",
+  "Fiction",
+];
 
 const Books = () => {
+  const [searchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
-  const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [category, setCategory] = useState(searchParams.get("category") || "");
+  const [availability, setAvailability] = useState("");
   const [sort, setSort] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 1,
+    limit: 8,
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+    setCategory(searchParams.get("category") || "");
+    setPage(1);
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/book-categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        const merged = new Set([
+          ...fallbackCategories,
+          ...(Array.isArray(data) ? data : []),
+        ]);
+        setCategories([...merged]);
+      })
+      .catch(() => setCategories(fallbackCategories));
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, sort, category, availability]);
 
   useEffect(() => {
     setLoading(true);
+    setError("");
 
-    fetch(`${import.meta.env.VITE_API_URL}/books?search=${search}&sort=${sort}`)
-      .then((res) => res.json())
+    const params = new URLSearchParams({
+      search,
+      sort,
+      category,
+      availability,
+      page: String(page),
+      limit: "8",
+    });
+
+    fetch(
+      `${import.meta.env.VITE_API_URL}/books?${params.toString()}`
+    )
+      .then(async (res) => {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to load books");
+        }
+
+        return data;
+      })
       .then((data) => {
-        setBooks(data);
-        setLoading(false);
-      });
-  }, [search, sort]);
+        if (Array.isArray(data)) {
+          setBooks(data);
+          setPagination({ total: data.length, totalPages: 1, limit: 8 });
+          return;
+        }
+
+        setBooks(Array.isArray(data.data) ? data.data : []);
+        setPagination({
+          total: data.total || 0,
+          totalPages: data.totalPages || 1,
+          limit: data.limit || 6,
+        });
+      })
+      .catch((err) => {
+        setBooks([]);
+        setError(err.message || "Failed to load books");
+      })
+      .finally(() => setLoading(false));
+  }, [availability, category, page, search, sort]);
+
+  const categoryCount = useMemo(() => {
+    return new Set(books.map((book) => book.category).filter(Boolean)).size;
+  }, [books]);
+
+  const formatDate = (value) => {
+    if (!value) return "Recently added";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Recently added";
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
-      <div className="text-center">
-        <h2 className="text-5xl font-extrabold">
-          Explore <span className="text-amber-600">Books</span>
-        </h2>
+    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="overflow-hidden rounded-3xl border border-base-300 bg-base-100 p-6 shadow-sm sm:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-end">
+          <div>
+            <span className="badge badge-warning font-bold uppercase tracking-wide">
+              Book catalog
+            </span>
+            <h1 className="mt-4 text-4xl font-black leading-tight sm:text-5xl">
+              Explore <span className="text-amber-600">Books</span>
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-base-content/60">
+              Search the BookCourier collection, compare courier fees, and open
+              the details page when you are ready to request delivery.
+            </p>
+          </div>
 
-        <p className="text-gray-500 mt-4">
-          Browse popular books from nearby libraries.
-        </p>
-      </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="input input-bordered flex items-center gap-2 bg-base-200">
+              <FiSearch className="text-base-content/40" />
+              <input
+                type="text"
+                placeholder="Search by title..."
+                className="grow"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
 
-      <div className="max-w-3xl mx-auto mt-10 grid md:grid-cols-2 gap-4">
-        <input
-          type="text"
-          placeholder="Search books by title..."
-          className="input input-bordered w-full"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+            <label className="select select-bordered flex items-center gap-2 bg-base-200">
+              <FiSliders className="text-base-content/40" />
+              <select
+                className="grow bg-transparent outline-none"
+                value={sort}
+                onChange={(event) => setSort(event.target.value)}
+              >
+                <option value="">Sort by price</option>
+                <option value="asc">Price: Low to High</option>
+                <option value="desc">Price: High to Low</option>
+              </select>
+            </label>
 
-        <select
-          className="select select-bordered w-full"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="">Sort by price</option>
-          <option value="asc">Price: Low to High</option>
-          <option value="desc">Price: High to Low</option>
-        </select>
+            <select
+              className="select select-bordered w-full bg-base-200"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              <option value="">All categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="select select-bordered w-full bg-base-200"
+              value={availability}
+              onChange={(event) => setAvailability(event.target.value)}
+            >
+              <option value="">All availability</option>
+              <option value="available">Available only</option>
+              <option value="unavailable">Unavailable only</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3 text-sm text-base-content/55">
+          <span className="badge badge-outline">{pagination.total} books found</span>
+          <span className="badge badge-outline">{categoryCount} categories</span>
+          {search && <span className="badge badge-warning">Search: {search}</span>}
+          {category && <span className="badge badge-warning">Category: {category}</span>}
+          {availability && (
+            <span className="badge badge-warning capitalize">
+              {availability}
+            </span>
+          )}
+        </div>
       </div>
 
       {loading ? (
-        <div className="min-h-[40vh] flex items-center justify-center">
-          <span className="loading loading-spinner loading-lg text-warning"></span>
-        </div>
-      ) : books.length === 0 ? (
-        <div className="min-h-[40vh] flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-4xl font-extrabold mb-4">No Books Found</h2>
-            <p className="text-gray-500">Try searching with another title.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-14">
-          {books.map((book) => (
-            <div
-              key={book._id}
-              className="card bg-base-100 shadow-xl rounded-3xl overflow-hidden border"
-            >
-              <figure className="h-72 overflow-hidden">
-                <img
-                  src={book.image}
-                  alt={book.title}
-                  className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                />
-              </figure>
-
-              <div className="card-body">
-                <div className="badge badge-warning text-black">
-                  {book.category}
-                </div>
-
-                <h2 className="card-title text-2xl mt-3">{book.title}</h2>
-
-                <p className="text-gray-500">By {book.author}</p>
-
-                <p className="font-bold text-amber-600 text-lg">
-                  Price: ${book.price || 0}
-                </p>
-
-                <div className="card-actions mt-5">
-                  <Link
-                    to={`/books/${book._id}`}
-                    className="btn bg-amber-600 text-white border-none w-full"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+            <div key={item} className="rounded-3xl border border-base-300 bg-base-100 p-4">
+              <div className="skeleton h-72 rounded-2xl" />
+              <div className="mt-5 skeleton h-5 w-24" />
+              <div className="mt-4 skeleton h-7 w-3/4" />
+              <div className="mt-3 skeleton h-4 w-1/2" />
+              <div className="mt-4 skeleton h-16 w-full" />
+              <div className="mt-6 skeleton h-12 w-full rounded-2xl" />
             </div>
           ))}
         </div>
+      ) : error ? (
+        <div className="mx-auto mt-12 max-w-xl rounded-3xl border border-base-300 bg-base-100 p-8 text-center shadow-sm">
+          <FiRefreshCw className="mx-auto text-5xl text-amber-600" />
+          <h2 className="mt-5 text-3xl font-black">Books unavailable</h2>
+          <p className="mt-2 text-base-content/60">{error}</p>
+        </div>
+      ) : books.length === 0 ? (
+        <div className="mx-auto mt-12 max-w-xl rounded-3xl border border-dashed border-base-300 bg-base-100 p-8 text-center">
+          <FiBookOpen className="mx-auto text-5xl text-amber-600" />
+          <h2 className="mt-5 text-3xl font-black">No Books Found</h2>
+          <p className="mt-2 text-base-content/60">
+            Try another title or clear your search.
+          </p>
+          {search && (
+            <button onClick={() => setSearch("")} className="btn mt-6">
+              Clear Search
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {books.map((book) => (
+            <article
+              key={book._id}
+              className="group flex h-full flex-col overflow-hidden rounded-3xl border border-base-300 bg-base-100 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl"
+            >
+              <div className="relative h-64 overflow-hidden bg-base-200">
+                <img
+                  src={book.image}
+                  alt={book.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm">
+                  {book.available === false ? "Unavailable" : "Available"}
+                </span>
+              </div>
+
+              <div className="flex flex-1 flex-col p-5">
+                <span className="badge badge-outline">
+                  {book.category || "Library book"}
+                </span>
+                <h2 className="mt-4 line-clamp-2 min-h-[3.5rem] text-xl font-black leading-tight transition group-hover:text-amber-600">
+                  {book.title}
+                </h2>
+                <p className="mt-2 text-sm text-base-content/55">
+                  By {book.author || "Unknown author"}
+                </p>
+
+                <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-base-content/60">
+                  {book.description ||
+                    `${book.title} is available through the BookCourier catalog for library-to-door delivery requests.`}
+                </p>
+
+                <div className="mt-4 grid gap-2 text-xs text-base-content/55">
+                  <p className="flex items-center gap-2">
+                    <FiStar className="text-amber-600" />
+                    Rating: {book.rating || "4.7"}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <FiCalendar className="text-amber-600" />
+                    Added: {formatDate(book.createdAt || book.updatedAt)}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <FiMapPin className="text-amber-600" />
+                    {book.library || "Dhaka Central Library"}
+                  </p>
+                </div>
+
+                <div className="mt-auto flex items-center justify-between gap-4 border-t border-base-300 pt-5">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-base-content/40">
+                      Courier fee
+                    </p>
+                    <p className="mt-1 text-xl font-black text-amber-600">
+                      ${Number(book.price || 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <Link
+                    to={`/books/${book._id}`}
+                    className="btn bg-slate-950 text-white hover:bg-amber-600"
+                  >
+                    View Details
+                    <FiArrowRight />
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
-    </div>
+
+      {!loading && !error && books.length > 0 && pagination.totalPages > 1 && (
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+          <button
+            className="btn btn-sm"
+            disabled={page === 1}
+            onClick={() => setPage((value) => Math.max(value - 1, 1))}
+          >
+            Previous
+          </button>
+          {Array.from({ length: pagination.totalPages }, (_, index) => index + 1).map(
+            (item) => (
+              <button
+                key={item}
+                className={`btn btn-sm ${
+                  item === page ? "bg-amber-600 text-white" : ""
+                }`}
+                onClick={() => setPage(item)}
+              >
+                {item}
+              </button>
+            )
+          )}
+          <button
+            className="btn btn-sm"
+            disabled={page === pagination.totalPages}
+            onClick={() =>
+              setPage((value) => Math.min(value + 1, pagination.totalPages))
+            }
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </section>
   );
 };
 

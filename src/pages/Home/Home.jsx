@@ -6,6 +6,8 @@ import StatsSection from "../../components/StatsSection";
 import CallToAction from "../../components/CallToAction";
 import Categories from "../../components/Categories";
 import CoverageSection from "../../components/CoverageSection";
+import BlogPreview from "../../components/BlogPreview";
+import FAQSection from "../../components/FAQSection";
 
 const Home = () => {
   return (
@@ -23,6 +25,10 @@ const Home = () => {
       <StatsSection />
 
       <Testimonials />
+
+      <BlogPreview />
+
+      <FAQSection />
 
       <CallToAction />
     </div>

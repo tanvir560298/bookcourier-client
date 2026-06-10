@@ -6,6 +6,10 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Home from "../pages/Home/Home";
 import Register from "../pages/Register/Register";
 import Login from "../pages/Login/Login";
+import About from "../pages/About/About";
+import Contact from "../pages/Contact/Contact";
+import PrivacyTerms from "../pages/Legal/PrivacyTerms";
+import Blog from "../pages/Blog/Blog";
 
 import DashboardHome from "../pages/Dashboard/DashboardHome";
 import Profile from "../pages/Dashboard/Profile";
@@ -43,11 +47,27 @@ const router = createBrowserRouter([
 
       {
         path: "/books/:id",
-        element: (
-          <PrivateRoute>
-            <BookDetails />
-          </PrivateRoute>
-        ),
+        element: <BookDetails />,
+      },
+
+      {
+        path: "/about",
+        element: <About />,
+      },
+
+      {
+        path: "/contact",
+        element: <Contact />,
+      },
+
+      {
+        path: "/blog",
+        element: <Blog />,
+      },
+
+      {
+        path: "/privacy-terms",
+        element: <PrivacyTerms />,
       },
 
       {

@@ -1,17 +1,45 @@
 import { useEffect, useState } from "react";
 import useAuth from "../../hooks/useAuth";
+import toast from "react-hot-toast";
 
 const Invoices = () => {
   const { user } = useAuth();
   const [payments, setPayments] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user?.email) return;
 
+    setError("");
+
     fetch(`${import.meta.env.VITE_API_URL}/payments?email=${user.email}`)
-      .then((res) => res.json())
-      .then((data) => setPayments(data));
+      .then(async (res) => {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to load invoices");
+        }
+
+        return data;
+      })
+      .then((data) => setPayments(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        setPayments([]);
+        setError(err.message || "Failed to load invoices");
+        toast.error(err.message || "Failed to load invoices");
+      });
   }, [user?.email]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="max-w-md text-center">
+          <h2 className="text-4xl font-extrabold mb-4">Invoices Unavailable</h2>
+          <p className="text-gray-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (payments.length === 0) {
     return (

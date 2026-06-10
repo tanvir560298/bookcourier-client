@@ -3,11 +3,27 @@ import toast from "react-hot-toast";
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
+  const [error, setError] = useState("");
 
   const loadUsers = () => {
+    setError("");
+
     fetch(`${import.meta.env.VITE_API_URL}/users`)
-      .then((res) => res.json())
-      .then((data) => setUsers(data));
+      .then(async (res) => {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to load users");
+        }
+
+        return data;
+      })
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        setUsers([]);
+        setError(err.message || "Failed to load users");
+        toast.error(err.message || "Failed to load users");
+      });
   };
 
   useEffect(() => {
@@ -34,6 +50,12 @@ const AllUsers = () => {
   return (
     <div>
       <h2 className="text-4xl font-extrabold mb-8">All Users</h2>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-error/20 bg-error/10 p-4 text-sm text-error">
+          {error}
+        </div>
+      )}
 
       <div className="w-full overflow-x-auto">
   <table className="table table-xs md:table-md bg-base-200 rounded-2xl min-w-[700px]">

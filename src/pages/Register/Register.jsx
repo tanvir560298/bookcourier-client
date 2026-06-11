@@ -5,7 +5,7 @@ import { FiArrowRight, FiBookOpen, FiCheckCircle, FiUserPlus } from "react-icons
 import useAuth from "../../hooks/useAuth";
 
 const Register = () => {
-  const { createUser, updateUserProfile } = useAuth();
+  const { createUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
@@ -32,8 +32,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await createUser(email, password);
-      await updateUserProfile(name, photo);
+      await createUser({ name, email, password, photo });
       toast.success("Account created successfully");
       form.reset();
       setPassword("");
@@ -70,39 +69,63 @@ const Register = () => {
         </p>
 
         <form onSubmit={handleRegister} className="mt-8 space-y-4">
-          <input
-            name="name"
-            type="text"
-            placeholder="Your name"
-            className="input input-bordered w-full"
-            required
-          />
+          <div>
+            <label className="label" htmlFor="register-name">
+              Name
+            </label>
+            <input
+              id="register-name"
+              name="name"
+              type="text"
+              placeholder="Your name"
+              className="input input-bordered w-full"
+              required
+            />
+          </div>
 
-          <input
-            name="photo"
-            type="url"
-            placeholder="Photo URL"
-            className="input input-bordered w-full"
-            required
-          />
+          <div>
+            <label className="label" htmlFor="register-photo">
+              Photo URL
+            </label>
+            <input
+              id="register-photo"
+              name="photo"
+              type="url"
+              placeholder="https://example.com/photo.jpg"
+              className="input input-bordered w-full"
+              required
+            />
+          </div>
 
-          <input
-            name="email"
-            type="email"
-            placeholder="Email address"
-            className="input input-bordered w-full"
-            required
-          />
+          <div>
+            <label className="label" htmlFor="register-email">
+              Email Address
+            </label>
+            <input
+              id="register-email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              className="input input-bordered w-full"
+              required
+            />
+          </div>
 
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="input input-bordered w-full"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <div>
+            <label className="label" htmlFor="register-password">
+              Password
+            </label>
+            <input
+              id="register-password"
+              name="password"
+              type="password"
+              placeholder="Password"
+              className="input input-bordered w-full"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
 
           <div className="rounded-2xl bg-base-200 p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-base-content/45">

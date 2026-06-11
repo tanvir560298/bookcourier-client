@@ -4,7 +4,7 @@ import { FiBookOpen, FiDollarSign, FiImage, FiPenTool, FiPlus } from "react-icon
 import useAuth from "../../hooks/useAuth";
 
 const AddBook = () => {
-  const { user } = useAuth();
+  const { user, token, handleAuthError } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddBook = (event) => {
@@ -44,6 +44,7 @@ const AddBook = () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(book),
     })
@@ -62,7 +63,10 @@ const AddBook = () => {
           form.reset();
         }
       })
-      .catch((err) => toast.error(err.message || "Failed to add book"))
+      .catch((err) => {
+        handleAuthError(err.message);
+        toast.error(err.message || "Failed to add book");
+      })
       .finally(() => setSubmitting(false));
   };
 

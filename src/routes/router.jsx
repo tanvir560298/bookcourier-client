@@ -21,12 +21,16 @@ import BookDetails from "../pages/Books/BookDetails";
 import ErrorPage from "../pages/ErrorPage/ErrorPage";
 
 import PrivateRoute from "./PrivateRoute";
+import RoleRoute from "./RoleRoute";
 import Invoices from "../pages/Dashboard/Invoices";
 import AddBook from "../pages/Dashboard/AddBook";
 import MyBooks from "../pages/Dashboard/MyBooks";
 import AllUsers from "../pages/Dashboard/AllUsers";
 import ManageBooks from "../pages/Dashboard/ManageBooks";
 import Orders from "../pages/Dashboard/Orders";
+import Reports from "../pages/Dashboard/Reports";
+import CategoriesAdmin from "../pages/Dashboard/CategoriesAdmin";
+import Settings from "../pages/Dashboard/Settings";
 
 const router = createBrowserRouter([
   {
@@ -101,6 +105,10 @@ const router = createBrowserRouter([
         path: "profile",
         element: <Profile />,
       },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
 
       {
         path: "my-orders",
@@ -112,23 +120,59 @@ const router = createBrowserRouter([
       },
       {
         path: "add-book",
-        element: <AddBook />,
+        element: (
+          <RoleRoute allowedRoles={["admin", "librarian"]}>
+            <AddBook />
+          </RoleRoute>
+        ),
       },
       {
         path: "my-books",
-        element: <MyBooks />,
+        element: (
+          <RoleRoute allowedRoles={["admin", "librarian"]}>
+            <MyBooks />
+          </RoleRoute>
+        ),
       },
       {
         path: "all-users",
-        element: <AllUsers />,
+        element: (
+          <RoleRoute allowedRoles={["admin"]}>
+            <AllUsers />
+          </RoleRoute>
+        ),
       },
       {
         path: "manage-books",
-        element: <ManageBooks />,
+        element: (
+          <RoleRoute allowedRoles={["admin"]}>
+            <ManageBooks />
+          </RoleRoute>
+        ),
       },
       {
         path: "orders",
-        element: <Orders />,
+        element: (
+          <RoleRoute allowedRoles={["admin", "librarian"]}>
+            <Orders />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "reports",
+        element: (
+          <RoleRoute allowedRoles={["admin"]}>
+            <Reports />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "categories",
+        element: (
+          <RoleRoute allowedRoles={["admin"]}>
+            <CategoriesAdmin />
+          </RoleRoute>
+        ),
       },
     ],
   },

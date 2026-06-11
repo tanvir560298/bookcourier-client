@@ -37,17 +37,17 @@ const Navbar = () => {
     }
   };
 
-  const navLinkClass = ({ isActive }) =>
-    `rounded-xl px-3 py-2 text-sm font-bold transition ${
-      isActive
-        ? "bg-amber-100 text-amber-700"
-        : "text-base-content/70 hover:bg-base-200 hover:text-amber-600"
-    }`;
-
   const closeMenus = () => {
     setMobileOpen(false);
     setProfileOpen(false);
   };
+
+  const navLinkClass = ({ isActive }) =>
+    `block rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+      isActive
+        ? "bg-amber-100 text-amber-700"
+        : "text-base-content/70 hover:bg-base-200 hover:text-amber-600"
+    }`;
 
   const links = (
     <>
@@ -81,40 +81,44 @@ const Navbar = () => {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-
         .nav-drop {
           animation: navDrop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
       `}</style>
 
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setMobileOpen((value) => !value)}
-            className="btn btn-ghost btn-sm lg:hidden"
+            className="btn btn-ghost btn-sm shrink-0 lg:hidden"
             aria-label="Toggle navigation menu"
           >
             {mobileOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
           </button>
 
-          <Link to="/" onClick={closeMenus} className="group flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-600 text-white shadow-lg shadow-amber-600/20 transition group-hover:rotate-3 group-hover:scale-105">
-              <FiBookOpen className="text-xl" />
+          <Link
+            to="/"
+            onClick={closeMenus}
+            className="group flex min-w-0 items-center gap-2"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-600 text-white shadow-lg shadow-amber-600/20 transition group-hover:rotate-3 group-hover:scale-105 sm:h-10 sm:w-10">
+              <FiBookOpen className="text-lg sm:text-xl" />
             </span>
-            <span className="text-xl font-black tracking-tight sm:text-2xl">
+
+            <span className="truncate text-lg font-black tracking-tight sm:text-2xl">
               Book<span className="text-amber-600">Courier</span>
             </span>
           </Link>
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">{links}</div>
+        <div className="hidden items-center gap-1 lg:flex">{links}</div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             type="button"
             onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-sm h-9 min-h-9 px-3"
             aria-label="Toggle theme"
           >
             {theme === "dark" ? <FiSun /> : <FiMoon />}
@@ -125,13 +129,13 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={() => setProfileOpen((value) => !value)}
-                className="flex items-center gap-2 rounded-full border border-base-300 bg-base-100 p-1 pr-2 shadow-sm transition hover:border-amber-400"
+                className="flex items-center rounded-full border border-base-300 bg-base-100 p-1 shadow-sm transition hover:border-amber-400 sm:gap-2 sm:pr-2"
                 aria-label="Open profile menu"
               >
                 <img
                   src={user.photoURL || "https://i.ibb.co/4pDNDk1/avatar.png"}
                   alt={user.displayName || "User"}
-                  className="h-9 w-9 rounded-full object-cover"
+                  className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
                 />
                 <span className="hidden max-w-28 truncate text-sm font-bold sm:inline">
                   {user.displayName || "Reader"}
@@ -146,7 +150,8 @@ const Navbar = () => {
                     aria-label="Close profile menu"
                     onClick={() => setProfileOpen(false)}
                   />
-                  <div className="nav-drop absolute right-0 z-40 mt-3 w-64 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-2xl">
+
+                  <div className="nav-drop fixed left-3 right-3 top-20 z-40 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-64">
                     <div className="border-b border-base-300 px-3 py-3">
                       <p className="text-xs font-semibold text-base-content/45">
                         Signed in as
@@ -164,6 +169,7 @@ const Navbar = () => {
                       <FiUser />
                       Profile
                     </Link>
+
                     <Link
                       to="/dashboard"
                       onClick={closeMenus}
@@ -172,10 +178,11 @@ const Navbar = () => {
                       <FiGrid />
                       Dashboard
                     </Link>
+
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="mt-2 flex w-full items-center gap-3 border-t border-base-300 px-3 py-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50"
+                      className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-base-300 px-3 py-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50"
                     >
                       <FiLogOut />
                       Logout
@@ -185,16 +192,18 @@ const Navbar = () => {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link to="/login" className="btn btn-outline btn-sm">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link to="/login" className="btn btn-outline btn-sm h-9 min-h-9 px-3">
                 <FiLogIn />
                 <span className="hidden sm:inline">Login</span>
               </Link>
+
               <Link
                 to="/register"
-                className="btn btn-sm border-none bg-amber-600 text-white hover:bg-amber-700"
+                className="btn btn-sm h-9 min-h-9 border-none bg-amber-600 px-3 text-white hover:bg-amber-700"
               >
-                Register
+                <span className="hidden xs:inline">Register</span>
+                <span className="xs:hidden">Join</span>
               </Link>
             </div>
           )}
@@ -202,21 +211,23 @@ const Navbar = () => {
       </div>
 
       {mobileOpen && (
-        <div className="nav-drop border-t border-base-300 bg-base-100 px-4 py-4 lg:hidden">
-          <div className="mx-auto flex max-w-7xl flex-col gap-2">{links}</div>
+        <div className="nav-drop border-t border-base-300 bg-base-100 px-3 py-4 lg:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-1">{links}</div>
+
           {!user && (
-            <div className="mx-auto mt-3 flex max-w-7xl gap-2 border-t border-base-300 pt-3">
+            <div className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-2 border-t border-base-300 pt-3">
               <Link
                 to="/login"
                 onClick={closeMenus}
-                className="btn btn-outline btn-sm flex-1"
+                className="btn btn-outline btn-sm w-full"
               >
                 Login
               </Link>
+
               <Link
                 to="/register"
                 onClick={closeMenus}
-                className="btn btn-sm flex-1 border-none bg-amber-600 text-white"
+                className="btn btn-sm w-full border-none bg-amber-600 text-white hover:bg-amber-700"
               >
                 Register
               </Link>

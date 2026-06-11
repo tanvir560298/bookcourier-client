@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   FiActivity,
@@ -10,6 +10,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import useAuth from "../../hooks/useAuth";
+import { BarChart, LineChart, PieChart } from "../../components/DashboardCharts";
 
 const formatDate = (value) => {
   if (!value) return "Recently added";
@@ -25,9 +26,8 @@ const formatDate = (value) => {
 };
 
 const DashboardHome = () => {
-  const { user } = useAuth();
-  const [books, setBooks] = useState([]);
-  const [users, setUsers] = useState([]);
+  const { user, token, handleAuthError } = useAuth();
+  const [dashboardData, setDashboardData] = useState(null);
   const [trackingSearch, setTrackingSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,62 +38,62 @@ const DashboardHome = () => {
         setLoading(true);
         setError("");
 
-        const [booksResponse, usersResponse] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL}/books`),
-          fetch(`${import.meta.env.VITE_API_URL}/users`),
-        ]);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/dashboard-stats`, {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (!booksResponse.ok || !usersResponse.ok) {
-          throw new Error("Unable to load dashboard data");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to load dashboard data");
         }
 
-        const [booksData, usersData] = await Promise.all([
-          booksResponse.json(),
-          usersResponse.json(),
-        ]);
-
-        setBooks(Array.isArray(booksData) ? booksData : []);
-        setUsers(Array.isArray(usersData) ? usersData : []);
+        setDashboardData(data);
       } catch (err) {
+        handleAuthError(err.message);
         setError(err.message || "Dashboard data failed to load");
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboardData();
-  }, []);
+    if (token) loadDashboardData();
+  }, [handleAuthError, token]);
 
-  const recentBooks = useMemo(() => books.slice(0, 4), [books]);
-  const librarianCount = users.filter((item) => item.role === "librarian").length;
-  const adminCount = users.filter((item) => item.role === "admin").length;
+  const cards = dashboardData?.cards || {};
+  const charts = dashboardData?.charts || {};
+  const recentBooks = dashboardData?.recent?.books || [];
+  const recentOrders = dashboardData?.recent?.orders || [];
+  const canManageItems = ["admin", "librarian"].includes(dashboardData?.role);
 
   const stats = [
     {
       label: "Total Books",
-      value: books.length,
+      value: cards.totalItems || 0,
       helper: "Available in the catalog",
       icon: FiBookOpen,
       accent: "text-amber-600 bg-amber-100",
     },
     {
       label: "Community Users",
-      value: users.length,
+      value: cards.totalUsers || 0,
       helper: "Registered readers",
       icon: FiUsers,
       accent: "text-sky-600 bg-sky-100",
     },
     {
-      label: "Library Team",
-      value: librarianCount + adminCount,
-      helper: `${adminCount} admin, ${librarianCount} librarian`,
+      label: "Revenue",
+      value: `$${Number(cards.revenue || 0).toFixed(2)}`,
+      helper: "Paid order income",
       icon: FiShield,
       accent: "text-emerald-600 bg-emerald-100",
     },
     {
-      label: "Delivery Status",
-      value: "Live",
-      helper: "Courier workflow ready",
+      label: "Orders / Activity",
+      value: cards.totalOrders || 0,
+      helper: `${cards.pendingOrders || 0} pending, ${cards.paidOrders || 0} paid`,
       icon: FiTruck,
       accent: "text-violet-600 bg-violet-100",
     },
@@ -119,8 +119,11 @@ const DashboardHome = () => {
             <Link to="/books" className="btn border-none bg-white text-slate-950 hover:bg-amber-100">
               Explore Books
             </Link>
-            <Link to="/dashboard/add-book" className="btn btn-outline border-white/40 text-white hover:bg-white hover:text-slate-950">
-              Add New Book
+            <Link
+              to={canManageItems ? "/dashboard/add-book" : "/dashboard/my-orders"}
+              className="btn btn-outline border-white/40 text-white hover:bg-white hover:text-slate-950"
+            >
+              {canManageItems ? "Add New Book" : "View My Items"}
             </Link>
           </div>
         </div>
@@ -160,6 +163,12 @@ const DashboardHome = () => {
         })}
       </section>
 
+      <section className="grid gap-6 xl:grid-cols-2">
+        <BarChart title="Books by Category" data={charts.bar || []} />
+        <PieChart title="Order Status Split" data={charts.pie || []} />
+        <LineChart title="Orders by Month" data={charts.line || []} className="xl:col-span-2" />
+      </section>
+
       <section className="grid gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2 rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -169,8 +178,11 @@ const DashboardHome = () => {
                 Latest catalog items from the backend.
               </p>
             </div>
-            <Link to="/dashboard/manage-books" className="btn btn-sm btn-outline">
-              Manage Books
+            <Link
+              to={dashboardData?.role === "admin" ? "/dashboard/manage-books" : "/books"}
+              className="btn btn-sm btn-outline"
+            >
+              {dashboardData?.role === "admin" ? "Manage Books" : "Browse Books"}
             </Link>
           </div>
 
@@ -222,6 +234,24 @@ const DashboardHome = () => {
 
         <aside className="space-y-6">
           <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+            <h2 className="text-xl font-bold">Recent Activity</h2>
+            <div className="mt-4 space-y-3">
+              {recentOrders.length ? (
+                recentOrders.slice(0, 4).map((order) => (
+                  <div key={order._id} className="rounded-xl bg-base-200 p-3">
+                    <p className="truncate text-sm font-bold">{order.bookTitle || "Book order"}</p>
+                    <p className="mt-1 text-xs text-base-content/55">
+                      {order.status || "pending"} · {formatDate(order.orderDate)}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-base-content/50">No activity yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
             <h2 className="text-xl font-bold">Quick Tracking</h2>
             <p className="mt-1 text-sm text-base-content/60">
               Search a book, order, or courier reference.
@@ -265,9 +295,9 @@ const DashboardHome = () => {
           <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
             <h2 className="text-xl font-bold">Fast Actions</h2>
             <div className="mt-4 grid gap-3">
-              <Link to="/dashboard/add-book" className="btn justify-start">
+              <Link to={canManageItems ? "/dashboard/add-book" : "/books"} className="btn justify-start">
                 <FiBookOpen />
-                Register a Book
+                {canManageItems ? "Register a Book" : "Browse Books"}
               </Link>
               <Link to="/dashboard/my-orders" className="btn justify-start">
                 <FiTruck />

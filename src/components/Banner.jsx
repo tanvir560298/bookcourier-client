@@ -76,7 +76,7 @@ const Banner = () => {
   };
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+    <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <style>{`
         @keyframes bannerFadeInUp {
           from { opacity: 0; transform: translateY(22px); }
@@ -155,7 +155,7 @@ const Banner = () => {
 
         <div
           key={currentSlide}
-          className="relative grid min-h-[560px] items-center gap-8 px-5 py-8 sm:px-8 lg:min-h-[calc(70vh-4rem)] lg:max-h-[calc(70vh-4rem)] lg:grid-cols-12 lg:px-12 lg:py-10"
+          className="relative grid min-h-[560px] items-center gap-8 px-5 py-8 pb-14 sm:px-8 lg:min-h-[620px] lg:grid-cols-12 lg:px-10 lg:py-10 lg:pb-14 xl:px-12"
         >
           <div className="lg:col-span-7">
             <div className="banner-fade-up inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-base-content/70 backdrop-blur">
@@ -163,7 +163,7 @@ const Banner = () => {
               {activeSlide.badge}
             </div>
 
-            <h1 className="banner-fade-up mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-base-content [animation-delay:100ms] sm:text-5xl lg:text-6xl">
+            <h1 className="banner-fade-up mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-base-content [animation-delay:100ms] sm:text-5xl lg:text-5xl xl:text-6xl">
               {activeSlide.title}{" "}
               <span className={`bg-gradient-to-r ${activeSlide.accent} bg-clip-text text-transparent`}>
                 {activeSlide.highlight}
@@ -223,7 +223,7 @@ const Banner = () => {
               <img
                 src={activeSlide.image}
                 alt={`${activeSlide.highlight} through BookCourier`}
-                className="banner-image-float h-[300px] w-full rounded-[1.35rem] object-cover sm:h-[380px] lg:h-[min(430px,50vh)]"
+              className="banner-image-float h-[300px] w-full rounded-[1.35rem] object-cover sm:h-[380px] lg:h-[390px] xl:h-[430px]"
               />
 
               <div className="banner-fade-up absolute bottom-4 left-4 right-4 rounded-2xl border border-white/30 bg-white/90 p-4 text-slate-900 shadow-lg backdrop-blur [animation-delay:350ms]">

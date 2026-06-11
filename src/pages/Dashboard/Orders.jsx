@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 
 const Orders = () => {
-  const { user } = useAuth();
+  const { user, token, handleAuthError } = useAuth();
   const [orders, setOrders] = useState([]);
 
-  const loadOrders = () => {
+  const loadOrders = useCallback(() => {
     if (!user) return;
 
     user.getIdToken().then((token) => {
@@ -15,44 +15,71 @@ const Orders = () => {
           authorization: `Bearer ${token}`,
         },
       })
-        .then((res) => res.json())
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to load orders");
+          return data;
+        })
         .then((data) => setOrders(Array.isArray(data) ? data : []))
-        .catch(() => toast.error("Failed to load orders"));
+        .catch((error) => {
+          handleAuthError(error.message);
+          toast.error(error.message || "Failed to load orders");
+        });
     });
-  };
+  }, [handleAuthError, user]);
 
 
  useEffect(() => {
     loadOrders();
-  }, [user]);
+  }, [loadOrders]);
 
   const handleStatusChange = (id, status) => {
     fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, {
       method: "PATCH",
       headers: {
         "content-type": "application/json",
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to update order status");
+        return data;
+      })
       .then((data) => {
         if (data.modifiedCount > 0) {
           toast.success("Order status updated");
           loadOrders();
         }
+      })
+      .catch((error) => {
+        handleAuthError(error.message);
+        toast.error(error.message || "Failed to update order status");
       });
   };
 
   const handleCancel = (id) => {
     fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/cancel`, {
       method: "PATCH",
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to cancel order");
+        return data;
+      })
       .then((data) => {
         if (data.modifiedCount > 0) {
           toast.success("Order cancelled");
           loadOrders();
         }
+      })
+      .catch((error) => {
+        handleAuthError(error.message);
+        toast.error(error.message || "Failed to cancel order");
       });
   };
 

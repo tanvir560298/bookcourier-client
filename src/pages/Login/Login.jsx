@@ -39,7 +39,7 @@ const Login = () => {
   };
 
   const fillDemo = () => {
-    setCredentials({ email: "ami@tumi.com", password: "your-admin-password" });
+    setCredentials({ email: "ami@tumi.com", password: "Amitumi" });
   };
 
   return (

@@ -1,16 +1,28 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { Link } from "react-router";
+import useAuth from "../../hooks/useAuth";
 
 const ManageBooks = () => {
+  const { token, handleAuthError } = useAuth();
   const [books, setBooks] = useState([]);
   const [editingBook, setEditingBook] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
-  const loadBooks = () => {
+  const loadBooks = useCallback(() => {
     setError("");
 
-    fetch(`${import.meta.env.VITE_API_URL}/admin/books`)
+    fetch(`${import.meta.env.VITE_API_URL}/admin/books`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    })
       .then(async (res) => {
         const data = await res.json();
 
@@ -22,30 +34,40 @@ const ManageBooks = () => {
       })
       .then((data) => setBooks(Array.isArray(data) ? data : []))
       .catch((err) => {
+        handleAuthError(err.message);
         setBooks([]);
         setError(err.message || "Failed to load books");
         toast.error(err.message || "Failed to load books");
       });
-  };
+  }, [handleAuthError, token]);
 
   useEffect(() => {
-    loadBooks();
-  }, []);
+    if (token) loadBooks();
+  }, [loadBooks, token]);
 
   const handleStatusChange = (id, status) => {
     fetch(`${import.meta.env.VITE_API_URL}/books/${id}`, {
       method: "PATCH",
       headers: {
         "content-type": "application/json",
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to update status");
+        return data;
+      })
       .then((data) => {
         if (data.modifiedCount > 0) {
           toast.success(`Book ${status} successfully`);
           loadBooks();
         }
+      })
+      .catch((error) => {
+        handleAuthError(error.message);
+        toast.error(error.message || "Failed to update status");
       });
   };
 
@@ -56,13 +78,24 @@ const ManageBooks = () => {
 
     fetch(`${import.meta.env.VITE_API_URL}/books/${id}`, {
       method: "DELETE",
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to delete book");
+        return data;
+      })
       .then((data) => {
         if (data.deletedCount > 0) {
           toast.success("Book deleted successfully");
           loadBooks();
         }
+      })
+      .catch((error) => {
+        handleAuthError(error.message);
+        toast.error(error.message || "Failed to delete book");
       });
   };
 
@@ -101,6 +134,7 @@ const ManageBooks = () => {
       method: "PATCH",
       headers: {
         "content-type": "application/json",
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(updatedBook),
     })
@@ -116,9 +150,42 @@ const ManageBooks = () => {
           loadBooks();
         }
       })
-      .catch((error) => toast.error(error.message || "Failed to update book"))
+      .catch((error) => {
+        handleAuthError(error.message);
+        toast.error(error.message || "Failed to update book");
+      })
       .finally(() => setSaving(false));
   };
+
+  const filteredBooks = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return books
+      .filter((book) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          [book.title, book.author, book.category]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(normalizedSearch));
+        const matchesStatus =
+          statusFilter === "all" || (book.status || "published") === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
+        if (sortBy === "price-high") return Number(b.price || 0) - Number(a.price || 0);
+        if (sortBy === "price-low") return Number(a.price || 0) - Number(b.price || 0);
+        return new Date(b.createdAt || b._id).getTime() - new Date(a.createdAt || a._id).getTime();
+      });
+  }, [books, search, sortBy, statusFilter]);
+
+  const totalPages = Math.max(Math.ceil(filteredBooks.length / pageSize), 1);
+  const paginatedBooks = filteredBooks.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, sortBy]);
 
   return (
     <div>
@@ -138,6 +205,35 @@ const ManageBooks = () => {
         </div>
       )}
 
+      <div className="mb-5 grid gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 md:grid-cols-4">
+        <input
+          type="text"
+          placeholder="Filter by title, author, category"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="input input-bordered w-full md:col-span-2"
+        />
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+          className="select select-bordered w-full"
+        >
+          <option value="all">All status</option>
+          <option value="published">Published</option>
+          <option value="unpublished">Unpublished</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+          className="select select-bordered w-full"
+        >
+          <option value="newest">Newest first</option>
+          <option value="title">Title A-Z</option>
+          <option value="price-high">Price high-low</option>
+          <option value="price-low">Price low-high</option>
+        </select>
+      </div>
+
       <div className="w-full overflow-x-auto">
   <table className="table table-xs md:table-md bg-base-100 rounded-2xl min-w-[820px] border border-base-300">
           <thead>
@@ -147,6 +243,7 @@ const ManageBooks = () => {
               <th>Book</th>
               <th>Author</th>
               <th>Status</th>
+              <th>View</th>
               <th>Edit</th>
               <th>Publish/Unpublish</th>
               <th>Delete</th>
@@ -154,9 +251,9 @@ const ManageBooks = () => {
           </thead>
 
           <tbody>
-            {books.map((book, index) => (
+            {paginatedBooks.map((book, index) => (
               <tr key={book._id}>
-                <td>{index + 1}</td>
+                <td>{(page - 1) * pageSize + index + 1}</td>
 
                 <td>
                   <img
@@ -173,6 +270,12 @@ const ManageBooks = () => {
                   <span className="badge badge-warning">
                     {book.status || "published"}
                   </span>
+                </td>
+
+                <td>
+                  <Link to={`/books/${book._id}`} className="btn btn-sm btn-outline">
+                    View
+                  </Link>
                 </td>
 
                 <td>
@@ -216,6 +319,29 @@ const ManageBooks = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-base-content/60">
+          Showing {paginatedBooks.length} of {filteredBooks.length} items
+        </p>
+        <div className="join">
+          <button
+            className="btn join-item btn-sm"
+            disabled={page === 1}
+            onClick={() => setPage((value) => Math.max(value - 1, 1))}
+          >
+            Prev
+          </button>
+          <button className="btn join-item btn-sm">Page {page} / {totalPages}</button>
+          <button
+            className="btn join-item btn-sm"
+            disabled={page === totalPages}
+            onClick={() => setPage((value) => Math.min(value + 1, totalPages))}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {editingBook && (

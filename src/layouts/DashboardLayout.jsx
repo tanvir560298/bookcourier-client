@@ -3,16 +3,27 @@ import { NavLink, Outlet } from "react-router";
 import useAuth from "../hooks/useAuth";
 
 const DashboardLayout = () => {
-  const { user } = useAuth();
+  const { user, token, handleAuthError } = useAuth();
   const [role, setRole] = useState("user");
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.email || !token) return;
 
-    fetch(`${import.meta.env.VITE_API_URL}/users/role/${user.email}`)
+    fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
-      .then((data) => setRole(data.role || "user"));
-  }, [user?.email]);
+      .then((data) => {
+        if (data.message) {
+          handleAuthError(data.message);
+          return;
+        }
+
+        setRole(data.user?.role || "user");
+      });
+  }, [handleAuthError, token, user?.email]);
 
   const linkClass = ({ isActive }) =>
     isActive
@@ -33,19 +44,52 @@ const DashboardLayout = () => {
             Overview
           </NavLink>
 
-          <NavLink to="/dashboard/profile" className={linkClass}>
-            Profile
-          </NavLink>
+          {role === "user" && (
+            <>
+              <NavLink to="/dashboard/my-orders" className={linkClass}>
+                My Items
+              </NavLink>
+              <NavLink to="/dashboard/invoices" className={linkClass}>
+                Activity
+              </NavLink>
+              <NavLink to="/dashboard/profile" className={linkClass}>
+                Profile
+              </NavLink>
+              <NavLink to="/dashboard/settings" className={linkClass}>
+                Settings
+              </NavLink>
+            </>
+          )}
 
-          <NavLink to="/dashboard/my-orders" className={linkClass}>
-            My Orders
-          </NavLink>
+          {role === "admin" && (
+            <>
+              <NavLink to="/dashboard/all-users" className={linkClass}>
+                Manage Users
+              </NavLink>
 
-          <NavLink to="/dashboard/invoices" className={linkClass}>
-            Invoices
-          </NavLink>
+              <NavLink to="/dashboard/manage-books" className={linkClass}>
+                Manage Items
+              </NavLink>
 
-          {(role === "librarian" || role === "admin") && (
+              <NavLink to="/dashboard/reports" className={linkClass}>
+                Reports
+              </NavLink>
+
+              <NavLink to="/dashboard/categories" className={linkClass}>
+                Categories
+              </NavLink>
+
+              <NavLink to="/dashboard/orders" className={linkClass}>
+                Orders
+              </NavLink>
+
+              <NavLink to="/dashboard/settings" className={linkClass}>
+                Settings
+              </NavLink>
+            </>
+          )}
+
+          {role === "librarian" && (
             <>
               <NavLink to="/dashboard/add-book" className={linkClass}>
                 Add Book
@@ -58,17 +102,13 @@ const DashboardLayout = () => {
               <NavLink to="/dashboard/orders" className={linkClass}>
                 Orders
               </NavLink>
-            </>
-          )}
 
-          {role === "admin" && (
-            <>
-              <NavLink to="/dashboard/all-users" className={linkClass}>
-                All Users
+              <NavLink to="/dashboard/profile" className={linkClass}>
+                Profile
               </NavLink>
 
-              <NavLink to="/dashboard/manage-books" className={linkClass}>
-                Manage Books
+              <NavLink to="/dashboard/settings" className={linkClass}>
+                Settings
               </NavLink>
             </>
           )}

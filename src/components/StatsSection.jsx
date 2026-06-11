@@ -1,45 +1,44 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FiBookOpen, FiMapPin, FiShield, FiUsers } from "react-icons/fi";
 
 const StatsSection = () => {
   const [books, setBooks] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [platformStats, setPlatformStats] = useState({
+    bookCount: 0,
+    userCount: 0,
+    categoryCount: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL}/books`).then((res) => res.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/users`).then((res) => res.json()),
-    ])
-      .then(([booksData, usersData]) => {
-        setBooks(Array.isArray(booksData) ? booksData : []);
-        setUsers(Array.isArray(usersData) ? usersData : []);
+    fetch(`${import.meta.env.VITE_API_URL}/platform-stats`)
+      .then((res) => res.json())
+      .then((data) => {
+        setPlatformStats({
+          bookCount: data.bookCount || 0,
+          userCount: data.userCount || 0,
+          categoryCount: data.categoryCount || 0,
+        });
+        setBooks(Array.isArray(data.recentBooks) ? data.recentBooks : []);
       })
       .catch(() => {
         setBooks([]);
-        setUsers([]);
+        setPlatformStats({ bookCount: 0, userCount: 0, categoryCount: 0 });
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const categoryCount = useMemo(() => {
-    const categories = new Set(
-      books.map((book) => book.category).filter(Boolean)
-    );
-    return categories.size;
-  }, [books]);
-
   const stats = [
     {
       label: "Books Available",
-      value: books.length,
-      helper: `${categoryCount || 0} active categories`,
+      value: platformStats.bookCount || books.length,
+      helper: `${platformStats.categoryCount || 0} active categories`,
       icon: FiBookOpen,
       accent: "from-amber-500/15 to-orange-500/15 text-amber-600",
     },
     {
       label: "Active Readers",
-      value: users.length,
+      value: platformStats.userCount,
       helper: "Registered community members",
       icon: FiUsers,
       accent: "from-sky-500/15 to-indigo-500/15 text-sky-600",

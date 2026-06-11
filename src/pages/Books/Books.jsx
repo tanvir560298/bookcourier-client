@@ -27,6 +27,8 @@ const Books = () => {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "");
+  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [availability, setAvailability] = useState("");
   const [sort, setSort] = useState("");
   const [page, setPage] = useState(1);
@@ -41,6 +43,8 @@ const Books = () => {
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
     setCategory(searchParams.get("category") || "");
+    setMinPrice(searchParams.get("minPrice") || "");
+    setMaxPrice(searchParams.get("maxPrice") || "");
     setPage(1);
   }, [searchParams]);
 
@@ -59,20 +63,23 @@ const Books = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, sort, category, availability]);
+  }, [search, sort, category, availability, minPrice, maxPrice]);
 
   useEffect(() => {
     setLoading(true);
     setError("");
 
     const params = new URLSearchParams({
-      search,
-      sort,
-      category,
-      availability,
       page: String(page),
       limit: "8",
     });
+
+    if (search.trim()) params.set("search", search.trim());
+    if (sort) params.set("sort", sort);
+    if (category) params.set("category", category);
+    if (availability) params.set("availability", availability);
+    if (minPrice !== "") params.set("minPrice", minPrice);
+    if (maxPrice !== "") params.set("maxPrice", maxPrice);
 
     fetch(
       `${import.meta.env.VITE_API_URL}/books?${params.toString()}`
@@ -105,7 +112,7 @@ const Books = () => {
         setError(err.message || "Failed to load books");
       })
       .finally(() => setLoading(false));
-  }, [availability, category, page, search, sort]);
+  }, [availability, category, maxPrice, minPrice, page, search, sort]);
 
   const categoryCount = useMemo(() => {
     return new Set(books.map((book) => book.category).filter(Boolean)).size;
@@ -122,6 +129,19 @@ const Books = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const hasActiveFilters =
+    search || category || availability || minPrice || maxPrice || sort;
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setCategory("");
+    setAvailability("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSort("");
+    setPage(1);
   };
 
   return (
@@ -146,7 +166,7 @@ const Books = () => {
               <FiSearch className="text-base-content/40" />
               <input
                 type="text"
-                placeholder="Search by title..."
+                placeholder="Search title, author, category..."
                 className="grow"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -160,7 +180,8 @@ const Books = () => {
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
               >
-                <option value="">Sort by price</option>
+                <option value="">Default sorting</option>
+                <option value="newest">Newest First</option>
                 <option value="asc">Price: Low to High</option>
                 <option value="desc">Price: High to Low</option>
               </select>
@@ -188,18 +209,56 @@ const Books = () => {
               <option value="available">Available only</option>
               <option value="unavailable">Unavailable only</option>
             </select>
+
+            <label className="input input-bordered flex items-center gap-2 bg-base-200">
+              <span className="text-sm font-bold text-base-content/45">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Minimum price"
+                className="grow"
+                value={minPrice}
+                onChange={(event) => setMinPrice(event.target.value)}
+              />
+            </label>
+
+            <label className="input input-bordered flex items-center gap-2 bg-base-200">
+              <span className="text-sm font-bold text-base-content/45">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Maximum price"
+                className="grow"
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(event.target.value)}
+              />
+            </label>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3 text-sm text-base-content/55">
+        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-base-content/55">
           <span className="badge badge-outline">{pagination.total} books found</span>
           <span className="badge badge-outline">{categoryCount} categories</span>
           {search && <span className="badge badge-warning">Search: {search}</span>}
           {category && <span className="badge badge-warning">Category: {category}</span>}
+          {sort && <span className="badge badge-warning">Sort: {sort}</span>}
           {availability && (
             <span className="badge badge-warning capitalize">
               {availability}
             </span>
+          )}
+          {minPrice && <span className="badge badge-warning">Min: ${minPrice}</span>}
+          {maxPrice && <span className="badge badge-warning">Max: ${maxPrice}</span>}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="btn btn-ghost btn-xs"
+            >
+              Clear filters
+            </button>
           )}
         </div>
       </div>
@@ -230,9 +289,9 @@ const Books = () => {
           <p className="mt-2 text-base-content/60">
             Try another title or clear your search.
           </p>
-          {search && (
-            <button onClick={() => setSearch("")} className="btn mt-6">
-              Clear Search
+          {hasActiveFilters && (
+            <button onClick={handleClearFilters} className="btn mt-6">
+              Clear Filters
             </button>
           )}
         </div>

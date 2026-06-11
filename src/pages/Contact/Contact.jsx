@@ -4,10 +4,14 @@ import { FiMail, FiMapPin, FiMessageSquare, FiPhone, FiSend } from "react-icons/
 
 const Contact = () => {
   const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [formError, setFormError] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const form = event.target;
+    setSuccessMessage("");
+    setFormError("");
 
     const contactMessage = {
       name: form.name.value.trim(),
@@ -17,7 +21,14 @@ const Contact = () => {
     };
 
     if (Object.values(contactMessage).some((value) => !value)) {
+      setFormError("Please complete every field");
       toast.error("Please complete every field");
+      return;
+    }
+
+    if (contactMessage.message.length < 10) {
+      setFormError("Message must be at least 10 characters");
+      toast.error("Message must be at least 10 characters");
       return;
     }
 
@@ -37,11 +48,16 @@ const Contact = () => {
       })
       .then((data) => {
         if (data.insertedId) {
+          setSuccessMessage("Message sent successfully. Our support team will review it soon.");
           toast.success("Message sent successfully");
           form.reset();
         }
       })
-      .catch((error) => toast.error(error.message || "Failed to send message"))
+      .catch((error) => {
+        const message = error.message || "Failed to send message";
+        setFormError(message);
+        toast.error(message);
+      })
       .finally(() => setSubmitting(false));
   };
 
@@ -84,6 +100,18 @@ const Contact = () => {
           <p className="mt-2 text-sm text-base-content/60">
             All fields are required.
           </p>
+
+          {successMessage && (
+            <div className="alert alert-success mt-5">
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {formError && (
+            <div className="alert alert-error mt-5">
+              <span>{formError}</span>
+            </div>
+          )}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <input
